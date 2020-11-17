@@ -1,0 +1,1089 @@
+---
+title: "SAL 413 Final Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Loading In Necesary Packages
+```{r}
+library(tidyverse)
+library(devtools)
+library(readr)
+devtools::install_github("BillPetti/baseballr")
+library(baseballr)
+library(ggrepel)
+library(readr)
+library(dplyr)
+```
+
+#Scraping Every Batted Ball Data from the 2019 Season by week and merging them inot seperate files by month
+```{r}
+#April
+april2019_week1 <- scrape_statcast_savant_batter_all("2019-04-01", "2019-04-07")
+april2019_week2 <- scrape_statcast_savant_batter_all("2019-04-08", "2019-04-14")
+april2019_week3 <- scrape_statcast_savant_batter_all("2019-04-15", "2019-04-21")
+april2019_week4 <- scrape_statcast_savant_batter_all("2019-04-22", "2019-04-28")
+april2019_week5 <- scrape_statcast_savant_batter_all("2019-04-29", "2019-04-30")
+
+april2019 <- rbind(april2019_week1, april2019_week2, april2019_week3, april2019_week4, april2019_week5)
+
+#May
+may2019_week1 <- scrape_statcast_savant_batter_all("2019-05-01", "2019-05-07")
+may2019_week2 <- scrape_statcast_savant_batter_all("2019-05-08", "2019-05-14")
+may2019_week3 <- scrape_statcast_savant_batter_all("2019-05-15", "2019-05-21")
+may2019_week4 <- scrape_statcast_savant_batter_all("2019-05-22", "2019-05-28")
+may2019_week5 <- scrape_statcast_savant_batter_all("2019-05-29", "2019-05-31")
+
+may2019 <- rbind(may2019_week1, may2019_week2, may2019_week3, may2019_week4, may2019_week5)
+
+#June
+june2019_week1 <- scrape_statcast_savant_batter_all("2019-06-01", "2019-06-07")
+june2019_week2 <- scrape_statcast_savant_batter_all("2019-06-08", "2019-06-14")
+june2019_week3 <- scrape_statcast_savant_batter_all("2019-06-15", "2019-06-21")
+june2019_week4 <- scrape_statcast_savant_batter_all("2019-06-22", "2019-06-28")
+june2019_week5 <- scrape_statcast_savant_batter_all("2019-06-29", "2019-06-30")
+
+june2019 <- rbind(june2019_week1, june2019_week2, june2019_week3, june2019_week4, june2019_week5)
+
+#July
+july2019_week1 <- scrape_statcast_savant_batter_all("2019-07-01", "2019-07-07")
+july2019_week2 <- scrape_statcast_savant_batter_all("2019-07-08", "2019-07-14")
+july2019_week3 <- scrape_statcast_savant_batter_all("2019-07-15", "2019-07-21")
+july2019_week4 <- scrape_statcast_savant_batter_all("2019-07-22", "2019-07-28")
+july2019_week5 <- scrape_statcast_savant_batter_all("2019-07-29", "2019-07-31")
+
+july2019 <- rbind(july2019_week1, july2019_week2, july2019_week3, july2019_week4, july2019_week5)
+
+#August
+august2019_week1 <- scrape_statcast_savant_batter_all("2019-08-01", "2019-08-07")
+august2019_week2 <- scrape_statcast_savant_batter_all("2019-08-08", "2019-08-14")
+august2019_week3 <- scrape_statcast_savant_batter_all("2019-08-15", "2019-08-21")
+august2019_week4 <- scrape_statcast_savant_batter_all("2019-08-22", "2019-08-28")
+august2019_week5 <- scrape_statcast_savant_batter_all("2019-08-29", "2019-08-31")
+
+august2019 <- rbind(august2019_week1, august2019_week2, august2019_week3, august2019_week4, august2019_week5)
+
+#september
+september2019_week1 <- scrape_statcast_savant_batter_all("2019-09-01", "2019-09-07")
+september2019_week2 <- scrape_statcast_savant_batter_all("2019-09-08", "2019-09-14")
+september2019_week3 <- scrape_statcast_savant_batter_all("2019-09-15", "2019-09-21")
+september2019_week4 <- scrape_statcast_savant_batter_all("2019-09-22", "2019-09-28")
+september2019_week5 <- scrape_statcast_savant_batter_all("2019-09-29", "2019-09-30")
+
+september2019 <- rbind(september2019_week1, september2019_week2, september2019_week3, september2019_week4, september2019_week5)
+```
+#Merging all Month Files into one collective '2019 Batted Ball Data Sheet'
+```{r}
+BattedBall2019 <- rbind(april2019, may2019, june2019, july2019, august2019, september2019)
+```
+#Add Dataset from Lahman's Database that inlcudes all players heights
+```{r}
+People_2019 <- read_csv("data/People_2019.csv")
+```
+
+#merge Batted Ball Data set and Player Heights data set by 'nameGiven' and 'player_name'
+```{r}
+BattedBallWithHeight2019 <-full_join(BattedBall2019, People_2019, by = c("player_name" = "fullName"))
+```
+
+#Batted Ball Code for players in medium Category
+
+```{r}
+mediumGroup <- BattedBallWithHeight2019 %>% filter(height <= 71)
+plate_width <- 17 + (9/pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+    geom_rect(xmin = -(plate_width/2)/12,
+              xmax = (plate_width/2)/12,
+              ymin = 1.5,
+              ymax = 3.6, color = "black", alpha = 1) +
+   coord_equal() + 
+  scale_x_continuous("Horizontal Location (Ft.)",
+                      limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                      limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumGroup, 3566) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+#Indavidual Pitch Chart: 4-Seam Fastball
+```{r}
+smallGroupFastballs <-
+  BattedBallWithHeight2019 %>% filter(height < 71 |
+                                        pitch_name == "4-Seam Fastball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroup, 3566) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+#Create CSV File
+```{r}
+write.csv(BattedBallWithHeight2019,"Final Project Data Sheet.csv")
+```
+
+```{r}
+BattedBallWithHeight2019 -> write.csv("finalProjectDataSheet.csv ")
+```
+
+#Calculating Percetnage of Balls Called Strike Per Each Pitch
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FF", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallFF
+count(smallFF)
+count(smallFF, description == "called_strike")
+1771/20742
+
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "4-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupFF, 4251) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FT", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallFT
+count(smallFT)
+count(smallFT, description == "called_strike")
+459/4600
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "2-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupFT, 4251) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CH", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallCH
+count(smallCH)
+count(smallCH, description == "called_strike")
+358/6253
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Changeup", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupCH, 6253) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CU", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallCU
+count(smallCU)
+count(smallCU, description == "called_strike")
+415/5268
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Curveball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupCU, 5268) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FC", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallFC
+count(smallFC)
+count(smallFC, description == "called_strike")
+317/3327
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Cutter", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupFC, 3327) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SL", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallSL
+count(smallSL)
+count(smallSL, description == "called_strike")
+606/8523
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Slider", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupSL, 3327) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FS", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallFS
+count(smallFS)
+count(smallFS, description == "called_strike")
+36/796
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Split Finger", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupFS, 797) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "KC", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallKC
+count(smallKC)
+count(smallKC, description == "called_strike")
+94/1157
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Knuckle Curve", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupKC, 1157) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SI", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallSI
+count(smallSI)
+count(smallSI, description == "called_strike")
+394/4297
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Sinker", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupSI, 4297) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FO", height <= 71, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallFO
+count(smallGroupFO)
+count(smallFO, description == "called_strike")
+2/2
+BattedBallWithHeight2019 %>% filter(height <= 71 |
+                                        pitch_name == "Forkball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(smallGroupFO, 2) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+-------------------------------------------------------------------
+#Medium Height Pitch Charts
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FF", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumFF
+count(mediumFF)
+count(mediumFF, description == "called_strike")
+5445/63266
+
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "4-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumFF, 63266) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FT", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumFT
+count(mediumFT)
+count(mediumFT, description == "called_strike")
+1375/14920
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "2-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumFT, 14920) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CH", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumCH
+count(mediumCH)
+count(mediumCH, description == "called_strike")
+1010/19595
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Changeup", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumCH, 19595) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CU", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumCU
+count(mediumCU)
+count(mediumCU, description == "called_strike")
+1132/15642
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Curveball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumCU, 15642) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FC", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumFC
+count(mediumFC)
+count(mediumFC, description == "called_strike")
+875/11178
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Cutter", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumFC, 11178) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SL", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumSL
+count(mediumSL)
+count(mediumSL, description == "called_strike")
+1902/29833
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Slider", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumSL, 29833) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FS", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumFS
+count(mediumFS)
+count(mediumFS, description == "called_strike")
+107/2459
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Split Finger", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumFS, 2459) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "KC", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumKC
+count(mediumKC)
+count(mediumKC, description == "called_strike")
+232/3234
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Knuckle Curve", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumKC, 3466) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SI", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumSI
+count(mediumSI)
+count(mediumSI, description == "called_strike")
+1151/13317
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Sinker", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumSI, 13317) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FO", height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumFO
+count(mediumFO)
+count(mediumFO, description == "called_strike")
+0/8
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77 |
+                                        pitch_name == "Forkball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumFO, 8) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+------------------------------------------------------------------
+#Large Height Pitch Charts
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FF", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeFF
+count(largeFF)
+count(largeFF, description == "called_strike")
+93/884
+
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "4-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeFF, 884) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FT", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeFT
+count(largeFT)
+count(largeFT, description == "called_strike")
+35/257
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "2-Seam Fastball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeFT, 257) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CH", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeCH
+count(largeCH)
+count(largeCH, description == "called_strike")
+14/232
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Changeup", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeCH, 232) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "CU", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeCU
+count(largeCU)
+count(largeCU, description == "called_strike")
+14/192
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Curveball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeCU, 192) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = 0.8)
+
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FC", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeFC
+count(largeFC)
+count(largeFC, description == "called_strike")
+11/164
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Cutter", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeFC, 164) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SL", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeSL
+count(largeSL)
+count(largeSL, description == "called_strike")
+35/499
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Slider", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeSL, 499) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FS", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeFS
+count(largeFS)
+count(largeFS, description == "called_strike")
+3/32
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Split Finger", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeFS, 32) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "KC", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeKC
+count(largeKC)
+count(largeKC, description == "called_strike")
+2/37
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Knuckle Curve", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeKC, 37) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "SI", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeSI
+count(largeSI)
+count(largeSI, description == "called_strike")
+23/191
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Sinker", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeSI, 191) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(pitch_type == "FO", height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeFO
+count(largeFO)
+count(largeFO, description == "called_strike")
+0/8
+BattedBallWithHeight2019 %>% filter(height >77 |
+                                        pitch_name == "Forkball", description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeFO, 8) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+
+
+
+
+#Charts for every pitch For each of the 3 Size Categories
+
+```{r}
+#Filter to Find exact amount of pitches in this scenario
+BattedBallWithHeight2019 %>% filter(height <72, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.4 | plate_z > 3.316 ) -> smallTotal
+count(smallTotal)
+count(smallTotal, description == "called_strike")
+4455/54986
+
+#Create visualization with our filtered data
+BattedBallWithHeight2019 %>% filter(height <72 
+                                        , description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.4,
+    ymax = 3.316,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+#Show Our Visualization
+k_zone_plot %+% sample_n(smallTotal, 54986) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+
+```{r}
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.5 | plate_z > 3.6 ) -> mediumTotal
+count(mediumTotal)
+count(mediumTotal, description == "called_strike")
+13234/173751
+BattedBallWithHeight2019 %>% filter(height >=72 , height <= 77, description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.5,
+    ymax = 3.6,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(mediumTotal, 173751) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
+
+```{r}
+BattedBallWithHeight2019 %>% filter(height >77, description == "called_strike" |  description == "ball" , plate_x < -(19.86/ 2) / 12 | plate_x > (19.86/ 2) / 12 | plate_z < 1.67 | plate_z > 3.78 ) -> largeTotal
+count(largeTotal)
+count(largeTotal, description == "called_strike")
+231/2496
+BattedBallWithHeight2019 %>% filter(height >77, description == "called_strike" | description == "ball")
+plate_width <- 17 + (9 / pi)
+k_zone_plot <- ggplot(NULL, aes(x = plate_x, y = plate_z)) +
+  geom_rect(
+    xmin = -(plate_width / 2) / 12,
+    xmax = (plate_width / 2) / 12,
+    ymin = 1.67,
+    ymax = 3.78,
+    color = "black",
+    alpha = 1
+  ) +
+  coord_equal() +
+  scale_x_continuous("Horizontal Location (Ft.)",
+                     limits = c(-2, 2)) +
+  scale_y_continuous("Vertical Location (Ft.)",
+                     limits = c(0, 5))
+
+k_zone_plot %+% sample_n(largeTotal, 2496) +
+  aes(color = type, shape = pitch_name) +
+  geom_point(alpha = .8)
+```
